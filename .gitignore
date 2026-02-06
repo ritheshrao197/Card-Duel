@@ -1,0 +1,52 @@
+# =========================
+# Unity Generated Folders
+# =========================
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+
+# =========================
+# Memory / Crash Dumps
+# =========================
+sysinfo.txt
+
+# =========================
+# IDE / Editor Files
+# =========================
+.vscode/
+.vs/
+.idea/
+*.csproj
+*.sln
+*.user
+*.userprefs
+*.pidb
+*.booproj
+
+# =========================
+# OS Files
+# =========================
+.DS_Store
+Thumbs.db
+
+# =========================
+# Addressables / Cache
+# =========================
+ServerData/
+StreamingAssets/aa/
+
+# =========================
+# Build Outputs
+# =========================
+*.apk
+*.aab
+
+# =========================
+# Temporary Meta Files
+# =========================
+*.tmp
+*.bak
