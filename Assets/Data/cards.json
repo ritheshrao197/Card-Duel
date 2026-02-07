@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "name": "Opening Batsman",
+    "cost": 1,
+    "power": 2,
+    "ability": {
+      "type": "GainPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 2,
+    "name": "Aggressive Opener",
+    "cost": 2,
+    "power": 4,
+    "ability": {
+      "type": "DoublePower",
+      "value": 0
+    }
+  },
+  {
+    "id": 3,
+    "name": "Spin Bowler",
+    "cost": 2,
+    "power": 2,
+    "ability": {
+      "type": "StealPoints",
+      "value": 2
+    }
+  },
+  {
+    "id": 4,
+    "name": "Fast Bowler",
+    "cost": 3,
+    "power": 3,
+    "ability": {
+      "type": "DiscardOpponentRandomCard",
+      "value": 1
+    }
+  },
+  {
+    "id": 5,
+    "name": "All-Rounder",
+    "cost": 3,
+    "power": 4,
+    "ability": {
+      "type": "GainPoints",
+      "value": 2
+    }
+  },
+  {
+    "id": 6,
+    "name": "Power Hitter",
+    "cost": 4,
+    "power": 6,
+    "ability": {
+      "type": "DoublePower",
+      "value": 0
+    }
+  },
+  {
+    "id": 7,
+    "name": "Wicket Keeper",
+    "cost": 2,
+    "power": 1,
+    "ability": {
+      "type": "DrawExtraCard",
+      "value": 1
+    }
+  },
+  {
+    "id": 8,
+    "name": "Swing Bowler",
+    "cost": 3,
+    "power": 2,
+    "ability": {
+      "type": "DestroyOpponentCardInPlay",
+      "value": 1
+    }
+  },
+  {
+    "id": 9,
+    "name": "Fielding Specialist",
+    "cost": 1,
+    "power": 1,
+    "ability": {
+      "type": "StealPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 10,
+    "name": "Captain's Call",
+    "cost": 2,
+    "power": 0,
+    "ability": {
+      "type": "GainPoints",
+      "value": 3
+    }
+  },
+  {
+    "id": 11,
+    "name": "Death Overs Specialist",
+    "cost": 4,
+    "power": 5,
+    "ability": {
+      "type": "StealPoints",
+      "value": 3
+    }
+  },
+  {
+    "id": 12,
+    "name": "Match Winner",
+    "cost": 5,
+    "power": 8,
+    "ability": {
+      "type": "GainPoints",
+      "value": 4
+    }
+  }
+]
