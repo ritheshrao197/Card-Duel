@@ -1,0 +1,122 @@
+[
+  {
+    "id": 1,
+    "cardName": "Cover Drive",
+    "cost": 1,
+    "power": 2,
+    "ability": {
+      "type": "GainPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 2,
+    "cardName": "Pull Shot",
+    "cost": 2,
+    "power": 3,
+    "ability": {
+      "type": "None",
+      "value": 0
+    }
+  },
+  {
+    "id": 3,
+    "cardName": "Six Over Long On",
+    "cost": 3,
+    "power": 5,
+    "ability": {
+      "type": "DoublePower",
+      "value": 0
+    }
+  },
+  {
+    "id": 4,
+    "cardName": "Quick Single",
+    "cost": 1,
+    "power": 1,
+    "ability": {
+      "type": "DrawExtraCard",
+      "value": 1
+    }
+  },
+  {
+    "id": 5,
+    "cardName": "Strike Rotation",
+    "cost": 2,
+    "power": 2,
+    "ability": {
+      "type": "DrawExtraCard",
+      "value": 1
+    }
+  },
+  {
+    "id": 6,
+    "cardName": "Yorker Delivery",
+    "cost": 3,
+    "power": 2,
+    "ability": {
+      "type": "DiscardOpponentRandomCard",
+      "value": 1
+    }
+  },
+  {
+    "id": 7,
+    "cardName": "Bouncer",
+    "cost": 2,
+    "power": 1,
+    "ability": {
+      "type": "StealPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 8,
+    "cardName": "Captain’s Call",
+    "cost": 2,
+    "power": 2,
+    "ability": {
+      "type": "GainPoints",
+      "value": 2
+    }
+  },
+  {
+    "id": 9,
+    "cardName": "All-Rounder",
+    "cost": 3,
+    "power": 3,
+    "ability": {
+      "type": "GainPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 10,
+    "cardName": "Direct Hit Run-Out",
+    "cost": 4,
+    "power": 3,
+    "ability": {
+      "type": "DestroyOpponentCardInPlay",
+      "value": 1
+    }
+  },
+  {
+    "id": 11,
+    "cardName": "Opening Partnership",
+    "cost": 1,
+    "power": 2,
+    "ability": {
+      "type": "GainPoints",
+      "value": 1
+    }
+  },
+  {
+    "id": 12,
+    "cardName": "Death Overs Assault",
+    "cost": 5,
+    "power": 7,
+    "ability": {
+      "type": "None",
+      "value": 0
+    }
+  }
+]

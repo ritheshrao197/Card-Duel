@@ -1,0 +1,180 @@
+[
+ 
+  {
+    "id": 1,
+    "cardName": "Cover Drive",
+    "cost": 1,
+    "power": 2,
+    "ability": { "type": "GainPoints", "value": 1 }
+  },
+  {
+    "id": 2,
+    "cardName": "Quick Single",
+    "cost": 1,
+    "power": 1,
+    "ability": { "type": "DrawExtraCard", "value": 1 }
+  },
+  {
+    "id": 3,
+    "cardName": "Opening Partnership",
+    "cost": 1,
+    "power": 2,
+    "ability": { "type": "GainPoints", "value": 1 }
+  },
+  {
+    "id": 4,
+    "cardName": "Powerplay Push",
+    "cost": 1,
+    "power": 1,
+    "ability": { "type": "None", "value": 0 }
+  },
+
+
+  {
+    "id": 5,
+    "cardName": "Pull Shot",
+    "cost": 2,
+    "power": 3,
+    "ability": { "type": "None", "value": 0 }
+  },
+  {
+    "id": 6,
+    "cardName": "Strike Rotation",
+    "cost": 2,
+    "power": 2,
+    "ability": { "type": "DrawExtraCard", "value": 1 }
+  },
+  {
+    "id": 7,
+    "cardName": "Captain’s Call",
+    "cost": 2,
+    "power": 2,
+    "ability": { "type": "GainPoints", "value": 2 }
+  },
+  {
+    "id": 8,
+    "cardName": "Soft Hands",
+    "cost": 2,
+    "power": 2,
+    "ability": { "type": "None", "value": 0 }
+  },
+
+
+  {
+    "id": 9,
+    "cardName": "All-Rounder",
+    "cost": 3,
+    "power": 3,
+    "ability": { "type": "GainPoints", "value": 1 }
+  },
+  {
+    "id": 10,
+    "cardName": "Swing Bowler",
+    "cost": 3,
+    "power": 2,
+    "ability": { "type": "DiscardOpponentRandomCard", "value": 1 }
+  },
+  {
+    "id": 11,
+    "cardName": "Reverse Sweep",
+    "cost": 3,
+    "power": 3,
+    "ability": { "type": "DrawExtraCard", "value": 1 }
+  },
+  {
+    "id": 12,
+    "cardName": "Pressure Over",
+    "cost": 3,
+    "power": 2,
+    "ability": { "type": "StealPoints", "value": 1 }
+  },
+
+  {
+    "id": 13,
+    "cardName": "Perfect Yorker",
+    "cost": 4,
+    "power": 3,
+    "ability": { "type": "DestroyOpponentCardInPlay", "value": 1 }
+  },
+  {
+    "id": 14,
+    "cardName": "Direct Hit Run-Out",
+    "cost": 4,
+    "power": 3,
+    "ability": { "type": "DestroyOpponentCardInPlay", "value": 1 }
+  },
+  {
+    "id": 15,
+    "cardName": "Bouncer Barrage",
+    "cost": 4,
+    "power": 2,
+    "ability": { "type": "DiscardOpponentRandomCard", "value": 2 }
+  },
+  {
+    "id": 16,
+    "cardName": "Middle-Overs Control",
+    "cost": 4,
+    "power": 4,
+    "ability": { "type": "None", "value": 0 }
+  },
+
+
+  {
+    "id": 17,
+    "cardName": "Six Over Long-On",
+    "cost": 5,
+    "power": 6,
+    "ability": { "type": "DoublePower", "value": 0 }
+  },
+  {
+    "id": 18,
+    "cardName": "Death Overs Assault",
+    "cost": 5,
+    "power": 7,
+    "ability": { "type": "None", "value": 0 }
+  },
+  {
+    "id": 19,
+    "cardName": "Finisher’s Nerve",
+    "cost": 5,
+    "power": 5,
+    "ability": { "type": "GainPoints", "value": 2 }
+  },
+  {
+    "id": 20,
+    "cardName": "Slower Ball Deception",
+    "cost": 5,
+    "power": 3,
+    "ability": { "type": "StealPoints", "value": 2 }
+  },
+
+
+  {
+    "id": 21,
+    "cardName": "Match-Winning Knock",
+    "cost": 6,
+    "power": 8,
+    "ability": { "type": "GainPoints", "value": 3 }
+  },
+  {
+    "id": 22,
+    "cardName": "Hat-Trick Over",
+    "cost": 6,
+    "power": 4,
+    "ability": { "type": "DestroyOpponentCardInPlay", "value": 2 }
+  },
+  {
+    "id": 23,
+    "cardName": "Captain’s Masterplan",
+    "cost": 6,
+    "power": 4,
+    "ability": { "type": "DrawExtraCard", "value": 2 }
+  },
+  {
+    "id": 24,
+    "cardName": "Last-Over Thriller",
+    "cost": 6,
+    "power": 9,
+    "ability": { "type": "None", "value": 0 }
+  }
+]
