@@ -1,3 +1,4 @@
+using System;
 using CardDuel.Events;
 using CardDuel.UI.Core;
 using CardDuel.Utils;
@@ -12,6 +13,7 @@ namespace CardDuel.UI
         {
             Logger.Log(LogCategory.UI, "UIFlowController | OnEnable | Subscribing to events");
 
+            EventBus.Subscribe<ShowMainMenu>(ShowMainMenu);
             EventBus.Subscribe<GameStartEvent>(OnGameStart);
             EventBus.Subscribe<GameEndEvent>(OnGameEnd);
             EventBus.Subscribe<SpectatorModeEvent>(OnSpectator);
@@ -21,11 +23,13 @@ namespace CardDuel.UI
         {
             Logger.Log(LogCategory.UI, "UIFlowController | OnDisable | Unsubscribing from events");
 
+            EventBus.Unsubscribe<ShowMainMenu>(ShowMainMenu);
             EventBus.Unsubscribe<GameStartEvent>(OnGameStart);
             EventBus.Unsubscribe<GameEndEvent>(OnGameEnd);
             EventBus.Unsubscribe<SpectatorModeEvent>(OnSpectator);
         }
 
+        
         private void Start()
         {
             Logger.Log(LogCategory.UI, "UIFlowController | Start | Switching to Matchmaking");
@@ -37,6 +41,13 @@ namespace CardDuel.UI
             }
 
             // UIManager.Instance.SwitchTo(UIState.Matchmaking);
+        }
+
+        private void ShowMainMenu(ShowMainMenu menu)
+        {
+            Logger.Log(LogCategory.UI, "UIFlowController | GameStartEvent received");
+
+            SwitchUI(UIState.MainMenu);
         }
 
         private void OnGameStart(GameStartEvent e)

@@ -18,7 +18,7 @@ namespace CardDuel.UI
 
         private void OnTurnStart(TurnStartEvent e)
         {
-            Debug.Log($"[CLIENT] Turn {e.turnNumber} started. Cost={e.availableCost}");
+            Debug.Log($"[CLIENT] Turn {e.currentTurn} started. Cost={e.availableCost}");
         }
     }
 }

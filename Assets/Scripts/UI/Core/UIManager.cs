@@ -46,7 +46,7 @@ namespace CardDuel.UI.Core
                 // hide after subscription
                 panel.Hide();
             }
-            SwitchTo(UIState.Matchmaking);
+            // SwitchTo(UIState.MainMenu);
 
         }
 
