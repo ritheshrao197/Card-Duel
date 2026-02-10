@@ -1,18 +1,52 @@
 using CardDuel.UI.Core;
 using CardDuel.UI.Events;
-using CardDuel.Core;
+using UnityEngine;
+using UnityEngine.UI;
 
-public class MainMenuPanel : UIPanel
+
+namespace CardDuel.UI.Panels
 {
-    public override UIState State => UIState.MainMenu;
-
-    public void OnHostClicked()
+    public class MainMenuPanel : UIPanel
     {
-        UIEventBus.Publish(new NetworkUIIntent.HostRequested());
-    }
+        [SerializeField] private Button hostButton;
+        [SerializeField] private Button joinButton;
 
-    public void OnJoinClicked()
-    {
-        UIEventBus.Publish(new NetworkUIIntent.ClientRequested());
+        protected override void RegisterEvents()
+        {
+            hostButton.onClick.AddListener(OnHostClicked);
+            joinButton.onClick.AddListener(OnJoinClicked);
+        }
+
+        protected override void UnregisterEvents()
+        {
+            hostButton.onClick.RemoveListener(OnHostClicked);
+            joinButton.onClick.RemoveListener(OnJoinClicked);
+        }
+
+        private void OnHostClicked()
+        {
+            UIEventBus.Publish(new ConnectRequestedEvent
+            {
+                Role = NetworkRole.Host
+            });
+
+            UIEventBus.Publish(new UIStateChangedEvent
+            {
+                State = UIState.Matchmaking
+            });
+        }
+
+        private void OnJoinClicked()
+        {
+            UIEventBus.Publish(new ConnectRequestedEvent
+            {
+                Role = NetworkRole.Client
+            });
+
+            UIEventBus.Publish(new UIStateChangedEvent
+            {
+                State = UIState.Matchmaking
+            });
+        }
     }
 }

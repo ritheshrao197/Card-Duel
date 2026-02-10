@@ -1,18 +1,41 @@
 using CardDuel.UI.Core;
-using CardDuel.Networking.Events;
-using CardDuel.Core;
+using CardDuel.UI.Events;
+using TMPro;
+using UnityEngine;
+using UnityEngine.UI;
 
 namespace CardDuel.UI.Panels
 {
     public class MatchmakingPanel : UIPanel
     {
-        public override UIState State => UIState.Matchmaking;
+        [SerializeField] private Button readyButton;
+        [SerializeField] private TextMeshProUGUI statusText;
 
-        protected override void OnShow()
+        protected override void RegisterEvents()
         {
-            EventBus.Subscribe<ConnectedToServerEvent>(_ =>
+            readyButton.onClick.AddListener(OnReadyClicked);
+            UIEventBus.Subscribe<BothPlayersReadyEvent>(OnBothReady);
+        }
+
+        protected override void UnregisterEvents()
+        {
+            readyButton.onClick.RemoveListener(OnReadyClicked);
+            UIEventBus.Unsubscribe<BothPlayersReadyEvent>(OnBothReady);
+        }
+
+        private void OnReadyClicked()
+        {
+            readyButton.interactable = false;
+            statusText.text = "Waiting for opponent...";
+
+            UIEventBus.Publish(new PlayerReadyClickedEvent());
+        }
+
+        private void OnBothReady(BothPlayersReadyEvent evt)
+        {
+            UIEventBus.Publish(new UIStateChangedEvent
             {
-                uiManager.Show(UIState.Gameplay);
+                State = UIState.Gameplay
             });
         }
     }

@@ -1,0 +1,220 @@
+{
+  "cards": [
+    {
+      "Id": 1,
+      "Name": "Cover Drive",
+      "Cost": 2,
+      "Power": 2,
+      "Role": "Batsman",
+      "Tags": ["Score", "Safe", "EarlyGame"],
+      "Ability": { "Type": "GainRuns", "Value": 2 }
+    },
+    {
+      "Id": 2,
+      "Name": "Pull Shot",
+      "Cost": 3,
+      "Power": 3,
+      "Role": "Batsman",
+      "Tags": ["Score", "Risk", "MidGame"],
+      "Ability": { "Type": "HighRiskRuns", "Value": 4 }
+    },
+    {
+      "Id": 3,
+      "Name": "Lofted Six",
+      "Cost": 4,
+      "Power": 4,
+      "Role": "Batsman",
+      "Tags": ["Burst", "Risk", "Finisher"],
+      "Ability": { "Type": "ChanceToLoseWicket", "Value": 1 }
+    },
+    {
+      "Id": 4,
+      "Name": "Late Cut",
+      "Cost": 2,
+      "Power": 1,
+      "Role": "Batsman",
+      "Tags": ["Draw", "Tempo", "Utility"],
+      "Ability": { "Type": "DrawExtraCard", "Value": 1 }
+    },
+    {
+      "Id": 5,
+      "Name": "Reverse Sweep",
+      "Cost": 3,
+      "Power": 2,
+      "Role": "Batsman",
+      "Tags": ["Control", "Counter"],
+      "Ability": { "Type": "CancelOpponentEffect", "Value": 1 }
+    },
+    {
+      "Id": 6,
+      "Name": "Powerplay Assault",
+      "Cost": 4,
+      "Power": 3,
+      "Role": "Batsman",
+      "Tags": ["Burst", "Tempo", "HighCommitment"],
+      "Ability": { "Type": "DoubleRunsThisTurn", "Value": 0 }
+    },
+    {
+      "Id": 7,
+      "Name": "Anchoring Innings",
+      "Cost": 3,
+      "Power": 1,
+      "Role": "Batsman",
+      "Tags": ["Defense", "Stall", "Control"],
+      "Ability": { "Type": "ReduceIncomingRuns", "Value": 2 }
+    },
+    {
+      "Id": 8,
+      "Name": "Quick Single",
+      "Cost": 1,
+      "Power": 1,
+      "Role": "Batsman",
+      "Tags": ["Tempo", "Utility", "Combo"],
+      "Ability": { "Type": "ExtraAction", "Value": 1 }
+    },
+    {
+      "Id": 9,
+      "Name": "Yorker",
+      "Cost": 3,
+      "Power": 3,
+      "Role": "Bowler",
+      "Tags": ["Wicket", "Control", "MidGame"],
+      "Ability": { "Type": "TakeWicket", "Value": 1 }
+    },
+    {
+      "Id": 10,
+      "Name": "Bouncer",
+      "Cost": 2,
+      "Power": 1,
+      "Role": "Bowler",
+      "Tags": ["Disrupt", "Tempo"],
+      "Ability": { "Type": "ForceDiscard", "Value": 1 }
+    },
+    {
+      "Id": 11,
+      "Name": "Swing Delivery",
+      "Cost": 2,
+      "Power": 2,
+      "Role": "Bowler",
+      "Tags": ["Control", "Debuff"],
+      "Ability": { "Type": "ReduceOpponentRuns", "Value": 2 }
+    },
+    {
+      "Id": 12,
+      "Name": "Spin Trap",
+      "Cost": 3,
+      "Power": 1,
+      "Role": "Bowler",
+      "Tags": ["Control", "Delayed"],
+      "Ability": { "Type": "DelayedWicket", "Value": 1 }
+    },
+    {
+      "Id": 13,
+      "Name": "Doosra",
+      "Cost": 3,
+      "Power": 2,
+      "Role": "Bowler",
+      "Tags": ["Bypass", "Counter"],
+      "Ability": { "Type": "IgnoreDefense", "Value": 1 }
+    },
+    {
+      "Id": 14,
+      "Name": "Slower Ball",
+      "Cost": 2,
+      "Power": 1,
+      "Role": "Bowler",
+      "Tags": ["Interrupt", "Control"],
+      "Ability": { "Type": "CancelNextAction", "Value": 1 }
+    },
+    {
+      "Id": 15,
+      "Name": "Death Over Specialist",
+      "Cost": 4,
+      "Power": 4,
+      "Role": "Bowler",
+      "Tags": ["Finisher", "Pressure"],
+      "Ability": { "Type": "BonusIfOpponentLow", "Value": 2 }
+    },
+    {
+      "Id": 16,
+      "Name": "Hat-Trick Threat",
+      "Cost": 5,
+      "Power": 5,
+      "Role": "Bowler",
+      "Tags": ["HighRisk", "WinCondition"],
+      "Ability": { "Type": "ChainWicket", "Value": 2 }
+    },
+    {
+      "Id": 17,
+      "Name": "Athletic Catch",
+      "Cost": 2,
+      "Power": 0,
+      "Role": "Fielding",
+      "Tags": ["Counter", "Defense"],
+      "Ability": { "Type": "NegateHighRunCard", "Value": 1 }
+    },
+    {
+      "Id": 18,
+      "Name": "Direct Hit Run-Out",
+      "Cost": 3,
+      "Power": 2,
+      "Role": "Fielding",
+      "Tags": ["Surprise", "Punish"],
+      "Ability": { "Type": "ConditionalWicket", "Value": 1 }
+    },
+    {
+      "Id": 19,
+      "Name": "Captain's Call",
+      "Cost": 2,
+      "Power": 0,
+      "Role": "Support",
+      "Tags": ["Control", "Planning"],
+      "Ability": { "Type": "ReorderUpcomingCards", "Value": 2 }
+    },
+    {
+      "Id": 20,
+      "Name": "Fielding Ring",
+      "Cost": 2,
+      "Power": 0,
+      "Role": "Fielding",
+      "Tags": ["Defense", "AoE"],
+      "Ability": { "Type": "ReduceAllOpponentRuns", "Value": 2 }
+    },
+    {
+      "Id": 21,
+      "Name": "Strategic Timeout",
+      "Cost": 1,
+      "Power": 0,
+      "Role": "Support",
+      "Tags": ["Reset", "Tempo"],
+      "Ability": { "Type": "ResetTemporaryEffects", "Value": 0 }
+    },
+    {
+      "Id": 22,
+      "Name": "Team Huddle",
+      "Cost": 2,
+      "Power": 0,
+      "Role": "Support",
+      "Tags": ["Recover", "Stabilize"],
+      "Ability": { "Type": "RecoverResources", "Value": 2 }
+    },
+    {
+      "Id": 23,
+      "Name": "Power Throw",
+      "Cost": 2,
+      "Power": 1,
+      "Role": "Fielding",
+      "Tags": ["Counter", "Reactive"],
+      "Ability": { "Type": "CounterAttack", "Value": 2 }
+    },
+    {
+      "Id": 24,
+      "Name": "Match Awareness",
+      "Cost": 3,
+      "Power": 2,
+      "Role": "Support",
+      "Tags": ["Adaptive", "Copy"],
+      "Ability": { "Type": "CopyLastCardReduced", "Value": 1 }
+    }
+  ]
+}

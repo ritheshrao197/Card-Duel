@@ -1,29 +1,47 @@
-using UnityEngine;
+using TMPro;
 using CardDuel.UI.Core;
-using CardDuel.Core;
-using CardDuel.Gameplay.Events;
+using CardDuel.UI.Events;
+using UnityEngine;
+using UnityEngine.UI;
 
-namespace CardDuel.UI.Gameplay
+namespace CardDuel.UI.Panels
 {
     public class GameplayPanel : UIPanel
     {
-        public override UIState State => UIState.Gameplay;
+        [SerializeField] private TextMeshProUGUI turnText;
+        [SerializeField] private TextMeshProUGUI energyText;
+        [SerializeField] private Image timerFill;
+        [SerializeField] private Button endTurnButton;
 
-        [SerializeField] private UIManager uiManager;
-
-        protected override void OnShow()
+        protected override void RegisterEvents()
         {
-            EventBus.Subscribe<MatchEndedEvent>(OnMatchEnded);
+            UIEventBus.Subscribe<TurnStartedEvent>(OnTurnStarted);
+            UIEventBus.Subscribe<TurnTimerTickEvent>(OnTimerTick);
+            UIEventBus.Subscribe<LocalTurnLockedEvent>(OnTurnLocked);
         }
 
-        protected override void OnHide()
+        protected override void UnregisterEvents()
         {
-            // Optional: unsubscribe if you add that support
+            UIEventBus.Unsubscribe<TurnStartedEvent>(OnTurnStarted);
+            UIEventBus.Unsubscribe<TurnTimerTickEvent>(OnTimerTick);
+            UIEventBus.Unsubscribe<LocalTurnLockedEvent>(OnTurnLocked);
         }
 
-        private void OnMatchEnded(MatchEndedEvent evt)
+        private void OnTurnStarted(TurnStartedEvent evt)
         {
-            uiManager.Show(UIState.GameOver);
+            turnText.text = $"Turn {evt.Turn}/6";
+            energyText.text = $"{evt.Energy}/{evt.MaxEnergy}";
+            endTurnButton.interactable = true;
+        }
+
+        private void OnTimerTick(TurnTimerTickEvent evt)
+        {
+            timerFill.fillAmount = evt.Remaining / 30f;
+        }
+
+        private void OnTurnLocked(LocalTurnLockedEvent evt)
+        {
+            endTurnButton.interactable = false;
         }
     }
 }
