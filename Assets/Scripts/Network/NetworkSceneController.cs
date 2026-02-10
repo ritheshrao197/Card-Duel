@@ -7,36 +7,68 @@ namespace CardDuel.Networking
 {
     public class NetworkSceneController : MonoBehaviour
     {
-        private void OnEnable()
-        {
-            if (NetworkManager.Singleton == null)
-                return;
+        private bool _isRegistered;
 
-            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+        private void Update()
+        {
+            TryRegister();
         }
 
         private void OnDisable()
         {
+            Unregister();
+        }
+
+        private void TryRegister()
+        {
+            if (_isRegistered)
+                return;
+
             if (NetworkManager.Singleton == null)
                 return;
 
+            if (!NetworkManager.Singleton.IsListening)
+                return;
+
+            if (NetworkManager.Singleton.SceneManager == null)
+                return;
+
+            NetworkManager.Singleton.SceneManager.OnLoadEventCompleted += OnSceneLoaded;
+            _isRegistered = true;
+        }
+
+        private void Unregister()
+        {
+            if (!_isRegistered)
+                return;
+
+            if (NetworkManager.Singleton == null)
+                return;
+
+            if (NetworkManager.Singleton.SceneManager == null)
+                return;
+
             NetworkManager.Singleton.SceneManager.OnLoadEventCompleted -= OnSceneLoaded;
+            _isRegistered = false;
         }
 
         public void LoadSceneForAll(string sceneName)
         {
-            if (!NetworkManager.Singleton || !NetworkManager.Singleton.IsServer)
+            if (NetworkManager.Singleton == null)
                 return;
 
-            UIEventBus.Publish(new SceneLoadStartedEvent
-            {
-                SceneName = sceneName
-            });
+            if (!NetworkManager.Singleton.IsServer)
+                return;
 
             NetworkManager.Singleton.SceneManager.LoadScene(
                 sceneName,
                 LoadSceneMode.Single
             );
+
+            UIEventBus.Publish(new SceneLoadStartedEvent
+            {
+                SceneName = sceneName
+            });
         }
 
         private void OnSceneLoaded(

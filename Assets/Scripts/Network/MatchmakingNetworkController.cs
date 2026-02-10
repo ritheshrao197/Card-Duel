@@ -1,48 +1,60 @@
 using Unity.Netcode;
 using CardDuel.UI.Events;
+using CardDuel.Utils;
 
 namespace CardDuel.Networking
 {
     public class MatchmakingNetworkController : NetworkBehaviour
     {
-        private NetworkVariable<bool> hostReady =
-            new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private NetworkVariable<bool> hostReady = new();
+        private NetworkVariable<bool> clientReady = new();
 
-        private NetworkVariable<bool> clientReady =
-            new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
-
-        public override void OnNetworkSpawn()
-        {
-            // no UI subscriptions here anymore
-        }
-
-        // ✅ PUBLIC intent method (called by Application layer)
+        // 🔑 PUBLIC INTENT METHOD (what UseCases call)
         public void SubmitReady()
         {
             if (!IsSpawned)
+            {
+                Log.Net("SubmitReady ignored (not spawned)");
                 return;
+            }
 
+            Log.Net("SubmitReady called");
             SubmitReadyServerRpc();
         }
 
+        // 🔑 SERVER AUTHORITY
         [ServerRpc(RequireOwnership = false)]
         private void SubmitReadyServerRpc(ServerRpcParams rpcParams = default)
         {
-            if (rpcParams.Receive.SenderClientId == NetworkManager.ServerClientId)
+            ulong sender = rpcParams.Receive.SenderClientId;
+
+            if (sender == NetworkManager.ServerClientId)
                 hostReady.Value = true;
             else
                 clientReady.Value = true;
 
+            Log.Net($"Player ready | ClientId={sender}");
+
             if (hostReady.Value && clientReady.Value)
             {
-                StartGameClientRpc();
+                Log.Net("Both players ready → starting game");
+
+                // SERVER-ONLY game start
+                UIEventBus.Publish(new GameplayStartRequestedEvent());
+
+                // CLIENT UI transition
+                ShowGameplayClientRpc();
             }
         }
 
         [ClientRpc]
-        private void StartGameClientRpc()
+        private void ShowGameplayClientRpc()
         {
-            UIEventBus.Publish(new BothPlayersReadyEvent());
+            UIEventBus.Publish(new GameplayPanelShownEvent());
+            UIEventBus.Publish(new UIStateChangedEvent
+            {
+                State = UIState.Gameplay
+            });
         }
     }
 }

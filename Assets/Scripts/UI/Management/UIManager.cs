@@ -50,6 +50,7 @@ namespace CardDuel.UI.Management
                     break;
                 case UIState.Gameplay:
                     gameplayPanel.Show();
+                    UIEventBus.Publish(new GameplayPanelShownEvent());
                     break;
                 case UIState.Reveal:
                     revealPanel.Show();

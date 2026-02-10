@@ -24,14 +24,12 @@ namespace CardDuel.Application
         {
             UIEventBus.Subscribe<ConnectRequestedEvent>(_matchmaking.OnConnectRequested);
             UIEventBus.Subscribe<PlayerReadyClickedEvent>(_matchmaking.OnPlayerReady);
-            UIEventBus.Subscribe<EndTurnClickedEvent>(_gameplay.OnEndTurnClicked);
         }
 
         public void Dispose()
         {
             UIEventBus.Unsubscribe<ConnectRequestedEvent>(_matchmaking.OnConnectRequested);
             UIEventBus.Unsubscribe<PlayerReadyClickedEvent>(_matchmaking.OnPlayerReady);
-            UIEventBus.Unsubscribe<EndTurnClickedEvent>(_gameplay.OnEndTurnClicked);
         }
     }
 }
