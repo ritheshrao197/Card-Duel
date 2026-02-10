@@ -1,0 +1,11 @@
+
+namespace CardDuel.Networking.Events
+{
+    public struct NetworkStartedEvent { }
+    public struct ConnectedToServerEvent { }
+    public struct DisconnectedFromServerEvent
+    {
+        public ulong ClientId;
+    }
+   
+}
