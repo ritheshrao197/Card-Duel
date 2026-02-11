@@ -11,6 +11,8 @@ namespace CardDuel.Gameplay
 {
     /// <summary>
     /// Manages turn folding mechanism with 30-second timer and card locking
+    /// Cards are folded when End Turn is pressed or timer expires
+    /// Folded cards appear face-down on the board and cannot be changed
     /// </summary>
     public class TurnFoldingSystem : NetworkBehaviour
     {
@@ -19,20 +21,24 @@ namespace CardDuel.Gameplay
         private bool _isTurnActive;
         private List<CardData> _foldedCards;
         private ulong _playerId;
+        private int _currentTurn;
         
         public float RemainingTime => Mathf.Max(0, MatchStructure.TURN_TIME_LIMIT - _turnTimer);
         public bool IsTurnActive => _isTurnActive;
         public List<CardData> FoldedCards => _foldedCards;
+        public int CurrentTurn => _currentTurn;
         
         public event Action<float> OnTimerUpdated;
         public event Action OnTurnTimeout;
         public event Action<List<CardData>> OnTurnFolded;
+        public event Action OnFoldCompleted;
         
         private void Awake()
         {
             _foldedCards = new List<CardData>();
             _turnTimer = 0f;
             _isTurnActive = false;
+            _currentTurn = 0;
         }
         
         public void Initialize(TurnStagingSystem stagingSystem, ulong playerId)
@@ -44,13 +50,14 @@ namespace CardDuel.Gameplay
         /// <summary>
         /// Start turn timer and activate folding system
         /// </summary>
-        public void StartTurnTimer()
+        public void StartTurnTimer(int turnNumber)
         {
+            _currentTurn = turnNumber;
             _turnTimer = 0f;
             _isTurnActive = true;
             _foldedCards.Clear();
             
-            // TODO: Publish turn timer started event
+            UIEventBus.Publish(new TurnTimerStartedEvent { Duration = MatchStructure.TURN_TIME_LIMIT });
         }
         
         /// <summary>
@@ -61,7 +68,7 @@ namespace CardDuel.Gameplay
             _isTurnActive = false;
             _turnTimer = 0f;
             
-            // TODO: Publish turn timer stopped event
+            UIEventBus.Publish(new TurnTimerStoppedEvent());
         }
         
         private void Update()
@@ -72,6 +79,7 @@ namespace CardDuel.Gameplay
             
             // Update UI with remaining time
             OnTimerUpdated?.Invoke(RemainingTime);
+            UIEventBus.Publish(new TurnTimerTickEvent { Remaining = RemainingTime });
             
             // Check for timeout
             if (_turnTimer >= MatchStructure.TURN_TIME_LIMIT)
@@ -87,6 +95,7 @@ namespace CardDuel.Gameplay
         {
             if (!_isTurnActive) return;
             
+            Debug.Log($"Player {_playerId} ending turn {_currentTurn}");
             FoldCards();
             StopTurnTimer();
             
@@ -101,11 +110,12 @@ namespace CardDuel.Gameplay
         {
             if (!_isTurnActive) return;
             
+            Debug.Log($"Turn {_currentTurn} timeout for player {_playerId}");
             OnTurnTimeout?.Invoke();
+            UIEventBus.Publish(new TurnTimeoutEvent());
+            
             FoldCards();
             StopTurnTimer();
-            
-            // TODO: Publish turn timeout event
             
             // Send folded cards to server
             SubmitFoldedCardsServerRpc(GetFoldedCardIds());
@@ -122,11 +132,21 @@ namespace CardDuel.Gameplay
             _foldedCards = _stagingSystem.FinalizeStaging();
             
             // Lock cards (no more changes allowed)
-            // Card locking would be handled at the UI level
+            foreach (var card in _foldedCards)
+            {
+                card.IsRevealed = false; // Cards remain hidden until reveal phase
+            }
             
             OnTurnFolded?.Invoke(_foldedCards);
+            OnFoldCompleted?.Invoke();
             
-            // TODO: Publish cards folded event
+            UIEventBus.Publish(new CardsFoldedEvent 
+            { 
+                CardCount = _foldedCards.Count, 
+                CardIds = GetFoldedCardIds().ToList() 
+            });
+            
+            Debug.Log($"Folded {_foldedCards.Count} cards for player {_playerId} in turn {_currentTurn}");
         }
         
         /// <summary>
@@ -159,6 +179,16 @@ namespace CardDuel.Gameplay
             return Mathf.Clamp01(_turnTimer / MatchStructure.TURN_TIME_LIMIT);
         }
         
+        /// <summary>
+        /// Reset system for new turn
+        /// </summary>
+        public void ResetForNewTurn()
+        {
+            StopTurnTimer();
+            _foldedCards.Clear();
+            _currentTurn = 0;
+        }
+        
         #region Network RPCs
         
         [ServerRpc(RequireOwnership = false)]
@@ -166,16 +196,27 @@ namespace CardDuel.Gameplay
         {
             ulong clientId = rpcParams.Receive.SenderClientId;
             
-            // TODO: Store folded cards for this player
+            Debug.Log($"Server received folded cards from client {clientId}: {string.Join(",", cardIds)}");
             
-            // Add player to ended players list
+            // Store folded cards for this player in game state
+            var foldedCardsList = new List<CardData>();
+            foreach (int cardId in cardIds)
+            {
+                var card = CardDatabaseProvider.Get(cardId);
+                if (card != null)
+                {
+                    foldedCardsList.Add(card);
+                }
+            }
+            
+            GameState.Instance.PlayedCards[clientId] = foldedCardsList;
             GameState.Instance.TurnEndedPlayers.Add(clientId);
             
             // Check if both players have ended their turns
             if (GameState.Instance.TurnEndedPlayers.Count == 
                 NetworkManager.Singleton.ConnectedClientsIds.Count)
             {
-                // Start reveal phase
+                Debug.Log("Both players have ended turns - starting reveal phase");
                 StartRevealPhaseClientRpc();
             }
             else
@@ -188,38 +229,45 @@ namespace CardDuel.Gameplay
         [ClientRpc]
         private void NotifyPlayerEndedTurnClientRpc(ulong playerId)
         {
-            // TODO: Publish player ended turn event
+            UIEventBus.Publish(new PlayerEndedTurnEvent { PlayerId = playerId });
+            UIEventBus.Publish(new WaitingForOpponentEvent { IsWaiting = true });
         }
         
         [ClientRpc]
         private void StartRevealPhaseClientRpc()
         {
-            // TODO: Publish reveal phase started event
+            UIEventBus.Publish(new RevealPhaseStartedEvent());
+            UIEventBus.Publish(new UIStateChangedEvent { State = UIState.Reveal });
         }
         
         #endregion
     }
     
     // Events for folding system
-    public class TurnTimerStartedEvent
+    public class TurnTimerStartedEvent : IUIEvent
     {
         public float Duration;
     }
     
-    public class TurnTimerStoppedEvent { }
+    public class TurnTimerStoppedEvent : IUIEvent { }
     
-    public class TurnTimeoutEvent { }
+    public class TurnTimeoutEvent : IUIEvent { }
     
-    public class CardsFoldedEvent
+    public class CardsFoldedEvent : IUIEvent
     {
         public int CardCount;
         public List<int> CardIds;
     }
     
-    public class PlayerEndedTurnEvent
+    public class PlayerEndedTurnEvent : IUIEvent
     {
         public ulong PlayerId;
     }
     
-    public class RevealPhaseStartedEvent { }
+    public class RevealPhaseStartedEvent : IUIEvent { }
+    
+    public class WaitingForOpponentEvent : IUIEvent
+    {
+        public bool IsWaiting;
+    }
 }

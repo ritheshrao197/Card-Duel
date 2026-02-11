@@ -6,6 +6,8 @@ namespace CardDuel.Networking
 {
     /// <summary>
     /// Base class for all JSON network messages
+    /// ALL network messages must be sent as JSON strings only
+    /// Every message must include an "action" field
     /// </summary>
     [Serializable]
     public class NetworkMessage
@@ -27,10 +29,15 @@ namespace CardDuel.Networking
     {
         public List<string> playerIds;
         public int totalTurns;
+        public int startingHandSize;
+        public int deckSize;
 
         public GameStartMessage() : base("gameStart")
         {
             playerIds = new List<string>();
+            totalTurns = 6;
+            startingHandSize = 3;
+            deckSize = 12;
         }
     }
 
@@ -42,8 +49,12 @@ namespace CardDuel.Networking
     public class SyncBoardMessage : NetworkMessage
     {
         public int opponentCardCount;
+        public List<int> cardIds; // Optional: actual card IDs if needed
 
-        public SyncBoardMessage() : base("syncBoard") { }
+        public SyncBoardMessage() : base("syncBoard") 
+        {
+            cardIds = new List<int>();
+        }
     }
 
     /// <summary>
@@ -56,6 +67,7 @@ namespace CardDuel.Networking
         public string playerId;
         public int cardId;
         public int orderIndex;
+        public int turnNumber;
 
         public RevealSingleCardMessage() : base("revealSingleCard") { }
     }
@@ -68,8 +80,13 @@ namespace CardDuel.Networking
     public class EndTurnMessage : NetworkMessage
     {
         public string playerId;
+        public int turnNumber;
+        public List<int> foldedCardIds;
 
-        public EndTurnMessage() : base("endTurn") { }
+        public EndTurnMessage() : base("endTurn") 
+        {
+            foldedCardIds = new List<int>();
+        }
     }
 
     /// <summary>
@@ -81,12 +98,13 @@ namespace CardDuel.Networking
     {
         public string playerId;
         public int cardId;
+        public int turnNumber;
 
         public DrawCardMessage() : base("drawCard") { }
     }
 
     /// <summary>
-    /// Play card message
+    /// Play card message (for staging)
     /// { "action": "playCard", "playerId": "P1", "cardId": 5, "slotIndex": 0 }
     /// </summary>
     [Serializable]
@@ -95,6 +113,7 @@ namespace CardDuel.Networking
         public string playerId;
         public int cardId;
         public int slotIndex;
+        public int turnNumber;
 
         public PlayCardMessage() : base("playCard") { }
     }
@@ -109,8 +128,12 @@ namespace CardDuel.Networking
         public int turn;
         public int energy;
         public int maxEnergy;
+        public Dictionary<string, int> playerScores;
 
-        public TurnStartMessage() : base("turnStart") { }
+        public TurnStartMessage() : base("turnStart") 
+        {
+            playerScores = new Dictionary<string, int>();
+        }
     }
 
     /// <summary>
@@ -126,8 +149,68 @@ namespace CardDuel.Networking
     }
 
     /// <summary>
+    /// Score updated message
+    /// { "action": "scoreUpdated", "playerId": "P1", "delta": 5, "newScore": 15 }
+    /// </summary>
+    [Serializable]
+    public class ScoreUpdatedMessage : NetworkMessage
+    {
+        public string playerId;
+        public int delta;
+        public int newScore;
+        public int opponentScore;
+
+        public ScoreUpdatedMessage() : base("scoreUpdated") { }
+    }
+
+    /// <summary>
+    /// Reveal sequence started message
+    /// { "action": "revealSequenceStarted", "initiativePlayer": "P1", "cardCounts": {"P1": 2, "P2": 3} }
+    /// </summary>
+    [Serializable]
+    public class RevealSequenceStartedMessage : NetworkMessage
+    {
+        public string initiativePlayer;
+        public Dictionary<string, int> cardCounts;
+
+        public RevealSequenceStartedMessage() : base("revealSequenceStarted") 
+        {
+            cardCounts = new Dictionary<string, int>();
+        }
+    }
+
+    /// <summary>
+    /// Match completed message
+    /// { "action": "matchCompleted", "winnerId": "P1", "playerScores": {"P1": 25, "P2": 18} }
+    /// </summary>
+    [Serializable]
+    public class MatchCompletedMessage : NetworkMessage
+    {
+        public string winnerId;
+        public Dictionary<string, int> playerScores;
+
+        public MatchCompletedMessage() : base("matchCompleted") 
+        {
+            playerScores = new Dictionary<string, int>();
+        }
+    }
+
+    /// <summary>
+    /// Turn timeout message
+    /// { "action": "turnTimeout", "playerId": "P1", "turnNumber": 3 }
+    /// </summary>
+    [Serializable]
+    public class TurnTimeoutMessage : NetworkMessage
+    {
+        public string playerId;
+        public int turnNumber;
+
+        public TurnTimeoutMessage() : base("turnTimeout") { }
+    }
+
+    /// <summary>
     /// Utility class for JSON serialization/deserialization of network messages
-    /// Version 1.0 - JSON-only networking implementation
+    /// Version 2.0 - Enhanced JSON-only networking implementation
     /// </summary>
     public static class NetworkMessageSerializer
     {
@@ -194,7 +277,34 @@ namespace CardDuel.Networking
                 "playCard" => typeof(PlayCardMessage),
                 "turnStart" => typeof(TurnStartMessage),
                 "playerReady" => typeof(PlayerReadyMessage),
+                "scoreUpdated" => typeof(ScoreUpdatedMessage),
+                "revealSequenceStarted" => typeof(RevealSequenceStartedMessage),
+                "matchCompleted" => typeof(MatchCompletedMessage),
+                "turnTimeout" => typeof(TurnTimeoutMessage),
                 _ => typeof(NetworkMessage)
+            };
+        }
+        
+        /// <summary>
+        /// Create a message instance from action type
+        /// </summary>
+        public static NetworkMessage CreateMessage(string action)
+        {
+            return action switch
+            {
+                "gameStart" => new GameStartMessage(),
+                "syncBoard" => new SyncBoardMessage(),
+                "revealSingleCard" => new RevealSingleCardMessage(),
+                "endTurn" => new EndTurnMessage(),
+                "drawCard" => new DrawCardMessage(),
+                "playCard" => new PlayCardMessage(),
+                "turnStart" => new TurnStartMessage(),
+                "playerReady" => new PlayerReadyMessage(),
+                "scoreUpdated" => new ScoreUpdatedMessage(),
+                "revealSequenceStarted" => new RevealSequenceStartedMessage(),
+                "matchCompleted" => new MatchCompletedMessage(),
+                "turnTimeout" => new TurnTimeoutMessage(),
+                _ => new NetworkMessage(action)
             };
         }
     }

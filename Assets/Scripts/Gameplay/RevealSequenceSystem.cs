@@ -4,12 +4,16 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using CardDuel.UI.Events;
+using CardDuel.Networking;
 using CardDuel.Gameplay;
 
 namespace CardDuel.Gameplay
 {
     /// <summary>
     /// Manages the reveal sequence with initiative determination and alternating reveals
+    /// Initiative is determined once per turn at reveal start
+    /// Cards are revealed in alternating sequence: P1-Card1, P2-Card1, P1-Card2, P2-Card2, etc.
+    /// Score is updated immediately after every reveal
     /// </summary>
     public class RevealSequenceSystem : NetworkBehaviour
     {
@@ -18,10 +22,12 @@ namespace CardDuel.Gameplay
         private ulong _initiativePlayer;
         private bool _isRevealActive;
         private int _currentRevealIndex;
+        private int _currentTurn;
         
         public bool IsRevealActive => _isRevealActive;
         public ulong InitiativePlayer => _initiativePlayer;
         public Dictionary<ulong, int> PlayerScores => _playerScores;
+        public int CurrentTurn => _currentTurn;
         
         public event Action OnRevealStarted;
         public event Action<RevealStep> OnCardRevealed;
@@ -33,15 +39,19 @@ namespace CardDuel.Gameplay
             _playerScores = new Dictionary<ulong, int>();
             _isRevealActive = false;
             _currentRevealIndex = 0;
+            _currentTurn = 0;
         }
         
         /// <summary>
         /// Initialize reveal sequence with folded cards from both players
         /// </summary>
-        public void InitializeReveal(Dictionary<ulong, List<CardData>> playerCards)
+        public void InitializeReveal(Dictionary<ulong, List<CardData>> playerCards, int turnNumber)
         {
+            _currentTurn = turnNumber;
             _playerRevealQueues.Clear();
             _currentRevealIndex = 0;
+            
+            Debug.Log($"Initializing reveal sequence for turn {turnNumber}");
             
             // Copy player cards to reveal queues
             foreach (var kvp in playerCards)
@@ -51,6 +61,8 @@ namespace CardDuel.Gameplay
                 {
                     _playerScores[kvp.Key] = 0;
                 }
+                
+                Debug.Log($"Player {kvp.Key} has {_playerRevealQueues[kvp.Key].Count} cards to reveal");
             }
             
             // Determine initiative based on current scores
@@ -59,12 +71,25 @@ namespace CardDuel.Gameplay
             _isRevealActive = true;
             
             OnRevealStarted?.Invoke();
-            // TODO: Publish reveal sequence started event
+            
+            // Publish reveal sequence started event
+            var playerCardCounts = new Dictionary<ulong, int>();
+            foreach (var kvp in _playerRevealQueues)
+            {
+                playerCardCounts[kvp.Key] = kvp.Value.Count;
+            }
+            
+            UIEventBus.Publish(new RevealSequenceStartedEvent
+            {
+                InitiativePlayer = _initiativePlayer,
+                PlayerCardCounts = playerCardCounts
+            });
         }
         
         /// <summary>
         /// Determine which player has initiative (higher score).
         /// On a tie, choose a random player as required by the spec.
+        /// Initiative does not change during reveal.
         /// </summary>
         private void DetermineInitiative()
         {
@@ -74,18 +99,23 @@ namespace CardDuel.Gameplay
             int scoreA = _playerScores.GetValueOrDefault(playerA, 0);
             int scoreB = _playerScores.GetValueOrDefault(playerB, 0);
             
+            Debug.Log($"Initiative determination - Player {playerA}: {scoreA}, Player {playerB}: {scoreB}");
+            
             // Higher score gets initiative, tie → random player
             if (scoreA > scoreB)
             {
                 _initiativePlayer = playerA;
+                Debug.Log($"Player {playerA} gets initiative (higher score)");
             }
             else if (scoreB > scoreA)
             {
                 _initiativePlayer = playerB;
+                Debug.Log($"Player {playerB} gets initiative (higher score)");
             }
             else
             {
                 _initiativePlayer = UnityEngine.Random.value < 0.5f ? playerA : playerB;
+                Debug.Log($"Tie - Player {_initiativePlayer} randomly selected for initiative");
             }
         }
         
@@ -96,48 +126,57 @@ namespace CardDuel.Gameplay
         {
             if (!_isRevealActive) return;
             
+            Debug.Log($"Starting reveal sequence for turn {_currentTurn}");
             StartCoroutine(ExecuteRevealSequence());
         }
         
         /// <summary>
         /// Execute the alternating reveal sequence
+        /// Cards must be revealed in the order they were played
+        /// In alternating sequence: Initiative player reveals card #1 → resolve → update score
+        ///                          Opponent reveals card #1 → resolve → update score
+        ///                          Initiative player reveals card #2 → resolve → update score
+        ///                          Continue until all cards are revealed
         /// </summary>
         private IEnumerator ExecuteRevealSequence()
         {
-            ulong currentPlayer = _initiativePlayer;
             int maxReveals = GetMaxRevealCount();
+            Debug.Log($"Executing reveal sequence with {maxReveals} rounds");
             
-            while (_currentRevealIndex < maxReveals)
+            for (int revealIndex = 0; revealIndex < maxReveals; revealIndex++)
             {
-                // Reveal card from current player
-                if (HasCardToReveal(currentPlayer, _currentRevealIndex))
+                _currentRevealIndex = revealIndex;
+                Debug.Log($"Reveal round {_currentRevealIndex + 1}/{maxReveals}");
+                
+                // Initiative player reveals first
+                if (HasCardToReveal(_initiativePlayer, _currentRevealIndex))
                 {
-                    var revealedCard = RevealCard(currentPlayer, _currentRevealIndex);
+                    var revealedCard = RevealCard(_initiativePlayer, _currentRevealIndex);
                     if (revealedCard != null)
                     {
-                        yield return ProcessRevealedCard(currentPlayer, revealedCard);
+                        yield return ProcessRevealedCard(_initiativePlayer, revealedCard, _currentRevealIndex);
                     }
                 }
                 
-                // Switch to other player
-                currentPlayer = GetOtherPlayer(currentPlayer);
+                // Small delay for visual effect
+                yield return new WaitForSeconds(0.5f);
                 
-                // Reveal card from other player
-                if (HasCardToReveal(currentPlayer, _currentRevealIndex))
+                // Opponent reveals next
+                ulong opponentPlayer = GetOtherPlayer(_initiativePlayer);
+                if (HasCardToReveal(opponentPlayer, _currentRevealIndex))
                 {
-                    var revealedCard = RevealCard(currentPlayer, _currentRevealIndex);
+                    var revealedCard = RevealCard(opponentPlayer, _currentRevealIndex);
                     if (revealedCard != null)
                     {
-                        yield return ProcessRevealedCard(currentPlayer, revealedCard);
+                        yield return ProcessRevealedCard(opponentPlayer, revealedCard, _currentRevealIndex);
                     }
                 }
                 
-                // Switch back and increment index
-                currentPlayer = GetOtherPlayer(currentPlayer);
-                _currentRevealIndex++;
-                
-                // Small delay between reveals for visual effect
-                yield return new WaitForSeconds(0.8f);
+                // Wait before next reveal round
+                if (revealIndex < maxReveals - 1)
+                {
+                    yield return new WaitForSeconds(1.0f);
+                }
             }
             
             // Reveal sequence completed
@@ -146,31 +185,45 @@ namespace CardDuel.Gameplay
         
         /// <summary>
         /// Process a revealed card and update scores
+        /// Score updates after every reveal immediately
+        /// Next reveal begins only after the update
         /// </summary>
-        private IEnumerator ProcessRevealedCard(ulong playerId, CardData card)
+        private IEnumerator ProcessRevealedCard(ulong playerId, CardData card, int orderIndex)
         {
-            // Create simple score tracking for ability execution
+            Debug.Log($"Revealing card {card.Name} (ID: {card.Id}) for player {playerId} at index {orderIndex}");
+            
+            // Mark card as revealed
+            card.IsRevealed = true;
+            card.OrderIndex = orderIndex;
+            
+            // Get current scores
             int currentPlayerScore = _playerScores[playerId];
             int opponentScore = _playerScores[GetOtherPlayer(playerId)];
+            int opponentHandCount = GameState.Instance.LocalHand.Hand.Count; // Approximation
+            int opponentPlayCount = _playerRevealQueues[GetOtherPlayer(playerId)].Count;
             
-            // Execute card ability
-            int baseScore = CardAbilityManager.ExecuteAbility(card.Ability, card.Power, currentPlayerScore, opponentScore);
+            // Execute card ability with full context
+            var abilityResult = CardAbilityManager.ExecuteAbility(
+                card.Ability, 
+                card.Power, 
+                currentPlayerScore, 
+                opponentScore,
+                opponentHandCount,
+                opponentPlayCount
+            );
             
-            // Apply disruption effects if any
-            if (CardAbilityManager.GetAbilityType(card.Ability?.Type) == CardAbilityType.Disruption)
+            // Apply score changes
+            _playerScores[playerId] = currentPlayerScore + abilityResult.ScoreChange;
+            if (abilityResult.OpponentScoreChange != 0)
             {
-                int opponentCardCount = _playerRevealQueues[GetOtherPlayer(playerId)].Count;
-                int remainingCards = CardAbilityManager.ApplyDisruption(card.Ability.Value, opponentCardCount);
-                // Update opponent's reveal queue to reflect disruption
-                while (_playerRevealQueues[GetOtherPlayer(playerId)].Count > remainingCards)
-                {
-                    _playerRevealQueues[GetOtherPlayer(playerId)].RemoveAt(_playerRevealQueues[GetOtherPlayer(playerId)].Count - 1);
-                }
+                _playerScores[GetOtherPlayer(playerId)] += abilityResult.OpponentScoreChange;
             }
             
-            // Update scores
-            _playerScores[playerId] = currentPlayerScore + baseScore;
-            // Opponent score is handled by the ability execution
+            // Handle disruptive effects
+            if (CardAbilityManager.HasDisruptiveEffect(card.Ability))
+            {
+                ApplyDisruptionEffects(playerId, abilityResult);
+            }
             
             // Create reveal step data
             var revealStep = new RevealStep
@@ -178,25 +231,106 @@ namespace CardDuel.Gameplay
                 PlayerId = playerId,
                 Card = card,
                 BasePower = card.Power,
-                FinalScore = baseScore,
+                FinalScore = abilityResult.ScoreChange,
                 NewPlayerScore = _playerScores[playerId],
-                NewOpponentScore = _playerScores[GetOtherPlayer(playerId)]
+                NewOpponentScore = _playerScores[GetOtherPlayer(playerId)],
+                OrderIndex = orderIndex
             };
             
-            // Broadcast reveal step
+            // Broadcast reveal step locally
             OnCardRevealed?.Invoke(revealStep);
             
             // Send network event
-            BroadcastCardRevealedClientRpc(
-                playerId, 
-                card.Id, 
-                baseScore, 
-                _playerScores[playerId],
-                _playerScores[GetOtherPlayer(playerId)]
-            );
+            BroadcastCardRevealedNetwork(playerId, card.Id, abilityResult, orderIndex);
+            
+            // Publish UI event
+            UIEventBus.Publish(new CardRevealedEvent
+            {
+                PlayerId = playerId,
+                CardId = card.Id,
+                ScoreChange = abilityResult.ScoreChange,
+                NewPlayerScore = _playerScores[playerId],
+                NewOpponentScore = _playerScores[GetOtherPlayer(playerId)]
+            });
             
             // Wait for UI to process
             yield return new WaitForSeconds(0.3f);
+        }
+        
+        /// <summary>
+        /// Apply disruption effects from card abilities
+        /// </summary>
+        private void ApplyDisruptionEffects(ulong playerId, AbilityExecutionResult abilityResult)
+        {
+            ulong opponentId = GetOtherPlayer(playerId);
+            
+            // Handle discarded cards
+            if (abilityResult.DiscardedCardIds.Count > 0)
+            {
+                // TODO: Implement actual card discard logic
+                Debug.Log($"Player {playerId} discarded {abilityResult.DiscardedCardIds.Count} opponent cards");
+            }
+            
+            // Handle destroyed cards
+            if (abilityResult.DestroyedCardIds.Count > 0)
+            {
+                // Remove cards from opponent's reveal queue
+                var opponentQueue = _playerRevealQueues[opponentId];
+                int cardsToDestroy = Math.Min(abilityResult.DestroyedCardIds.Count, opponentQueue.Count);
+                
+                for (int i = 0; i < cardsToDestroy; i++)
+                {
+                    if (opponentQueue.Count > 0)
+                    {
+                        opponentQueue.RemoveAt(opponentQueue.Count - 1);
+                    }
+                }
+                
+                Debug.Log($"Player {playerId} destroyed {cardsToDestroy} opponent cards in play");
+            }
+        }
+        
+        /// <summary>
+        /// Broadcast card revealed to network
+        /// </summary>
+        private void BroadcastCardRevealedNetwork(ulong playerId, int cardId, AbilityExecutionResult result, int orderIndex)
+        {
+            if (IsServer)
+            {
+                // Send to all clients
+                var message = new RevealSingleCardMessage
+                {
+                    playerId = GetPlayerId(playerId),
+                    cardId = cardId,
+                    orderIndex = orderIndex,
+                    turnNumber = _currentTurn
+                };
+                
+                SendNetworkMessage(message);
+                
+                // Send score update
+                var scoreMessage = new ScoreUpdatedMessage
+                {
+                    playerId = GetPlayerId(playerId),
+                    delta = result.ScoreChange,
+                    newScore = _playerScores[playerId],
+                    opponentScore = _playerScores[GetOtherPlayer(playerId)]
+                };
+                
+                SendNetworkMessage(scoreMessage);
+            }
+        }
+        
+        /// <summary>
+        /// Send network message to all clients
+        /// </summary>
+        private void SendNetworkMessage(NetworkMessage message)
+        {
+            string json = NetworkMessageSerializer.Serialize(message);
+            if (json != null)
+            {
+                SendJsonToAllClientsClientRpc(json);
+            }
         }
         
         /// <summary>
@@ -207,9 +341,15 @@ namespace CardDuel.Gameplay
             _isRevealActive = false;
             _currentRevealIndex = 0;
             
+            Debug.Log("Reveal sequence completed");
+            
             OnRevealCompleted?.Invoke();
             
-            // TODO: Publish reveal sequence completed event
+            // Publish reveal sequence completed event
+            UIEventBus.Publish(new RevealSequenceCompletedEvent
+            {
+                PlayerScores = new Dictionary<ulong, int>(_playerScores)
+            });
             
             // Notify that round is complete and next turn can start
             if (IsServer)
@@ -270,14 +410,14 @@ namespace CardDuel.Gameplay
             return maxCount;
         }
         
-        private Dictionary<ulong, int> GetPlayerCardCounts()
+        private string GetPlayerId(ulong clientId)
         {
-            var counts = new Dictionary<ulong, int>();
-            foreach (var kvp in _playerRevealQueues)
-            {
-                counts[kvp.Key] = kvp.Value.Count;
-            }
-            return counts;
+            return clientId == NetworkManager.ServerClientId ? "P1" : "P2";
+        }
+        
+        private ulong GetClientId(string playerId)
+        {
+            return playerId == "P1" ? NetworkManager.ServerClientId : GetSecondPlayerId();
         }
         
         #endregion
@@ -285,14 +425,41 @@ namespace CardDuel.Gameplay
         #region Network RPCs
         
         [ClientRpc]
-        private void BroadcastCardRevealedClientRpc(ulong playerId, int cardId, int scoreChange, int newPlayerScore, int newOpponentScore)
+        private void SendJsonToAllClientsClientRpc(string jsonMessage)
         {
-            // TODO: Publish card revealed event
+            // Handle received message
+            var baseMessage = NetworkMessageSerializer.Deserialize(jsonMessage);
+            if (baseMessage != null)
+            {
+                // Route message based on action
+                switch (baseMessage.action)
+                {
+                    case "revealSingleCard":
+                        var revealMessage = NetworkMessageSerializer.Deserialize<RevealSingleCardMessage>(jsonMessage);
+                        if (revealMessage != null)
+                        {
+                            // Handle card reveal
+                            Debug.Log($"Received reveal for player {revealMessage.playerId} card {revealMessage.cardId}");
+                        }
+                        break;
+                    
+                    case "scoreUpdated":
+                        var scoreMessage = NetworkMessageSerializer.Deserialize<ScoreUpdatedMessage>(jsonMessage);
+                        if (scoreMessage != null)
+                        {
+                            // Handle score update
+                            Debug.Log($"Score updated for player {scoreMessage.playerId}: +{scoreMessage.delta} = {scoreMessage.newScore}");
+                        }
+                        break;
+                }
+            }
         }
         
         [ServerRpc(RequireOwnership = false)]
         private void RoundCompletedServerRpc()
         {
+            Debug.Log("Round completed - preparing next turn");
+            
             // Update game state for next round
             GameState.Instance.NextRound();
             
@@ -303,7 +470,8 @@ namespace CardDuel.Gameplay
         [ClientRpc]
         private void NextTurnReadyClientRpc()
         {
-            // TODO: Publish next turn ready event
+            UIEventBus.Publish(new NextTurnReadyEvent());
+            Debug.Log("Next turn ready notification sent to clients");
         }
         
         #endregion
@@ -320,16 +488,17 @@ namespace CardDuel.Gameplay
         public int FinalScore { get; set; }
         public int NewPlayerScore { get; set; }
         public int NewOpponentScore { get; set; }
+        public int OrderIndex { get; set; }
     }
     
     // Events for reveal system
-    public class RevealSequenceStartedEvent
+    public class RevealSequenceStartedEvent : IUIEvent
     {
         public ulong InitiativePlayer;
         public Dictionary<ulong, int> PlayerCardCounts;
     }
     
-    public class CardRevealedEvent
+    public class CardRevealedEvent : IUIEvent
     {
         public ulong PlayerId;
         public int CardId;
@@ -338,10 +507,10 @@ namespace CardDuel.Gameplay
         public int NewOpponentScore;
     }
     
-    public class RevealSequenceCompletedEvent
+    public class RevealSequenceCompletedEvent : IUIEvent
     {
         public Dictionary<ulong, int> PlayerScores;
     }
     
-    public class NextTurnReadyEvent { }
+    public class NextTurnReadyEvent : IUIEvent { }
 }
