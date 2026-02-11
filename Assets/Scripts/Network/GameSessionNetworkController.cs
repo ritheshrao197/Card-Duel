@@ -67,10 +67,10 @@ namespace CardDuel.Networking
             {
                 _turnRunning = false;
                 Log.Net("Turn timer expired → auto end");
-                
-                // Send auto-end turn message
-                var autoEndMessage = new NetworkMessage("autoEndTurn");
-                SendToAllClients(autoEndMessage);
+
+                // Notify all clients that the turn timer expired so they
+                // can auto-end their turn using the existing UI flow.
+                BroadcastTurnTimedOutClientRpc();
             }
         }
 
@@ -403,6 +403,16 @@ namespace CardDuel.Networking
         private void BroadcastTurnTimerTickClientRpc(float remaining)
         {
             UIEventBus.Publish(new TurnTimerTickEvent { Remaining = remaining });
+        }
+
+        /// <summary>
+        /// Notify clients that the turn timer has expired so they can
+        /// trigger their local end-turn flow.
+        /// </summary>
+        [ClientRpc]
+        private void BroadcastTurnTimedOutClientRpc()
+        {
+            UIEventBus.Publish(new EndTurnClickedEvent());
         }
 
         #endregion
