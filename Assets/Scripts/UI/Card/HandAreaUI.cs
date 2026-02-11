@@ -2,6 +2,7 @@ using UnityEngine;
 using CardDuel.Gameplay;
 using CardDuel.UI.Events;
 using CardDuel.Utils;
+using CardDuel.UI.Card;
 
 namespace CardDuel.UI.Gameplay
 {

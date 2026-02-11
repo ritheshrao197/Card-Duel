@@ -47,7 +47,7 @@ namespace CardDuel.Utils
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void Info(LogCategory category, string message, UnityEngine.Object context = null)
         {
-            if (!ENABLED || !IsCategoryEnabled(category)) return;
+            if (!IsCategoryEnabled(category)) return;
 
             string formatted = Format(category, message);
             UnityEngine.Debug.Log(formatted, context);
@@ -57,7 +57,7 @@ namespace CardDuel.Utils
         [Conditional("UNITY_EDITOR"), Conditional("DEVELOPMENT_BUILD")]
         public static void Warn(LogCategory category, string message, UnityEngine.Object context = null)
         {
-            if (!ENABLED) return;
+            if (!IsCategoryEnabled(category)) return;
 
             string formatted = Format(category, message, "WARN");
             UnityEngine.Debug.LogWarning(formatted, context);
@@ -118,7 +118,9 @@ namespace CardDuel.Utils
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         private static string Format(LogCategory category, string message, string prefix = "INFO")
         {
-            return $"[{DateTime.Now:HH:mm:ss}] [{Time.frameCount}] [{prefix}] [{category}] {message}";
+            // Cache DateTime string to avoid repeated formatting
+            var timeString = DateTime.Now.ToString("HH:mm:ss");
+            return "[" + timeString + "] [" + Time.frameCount + "] [" + prefix + "] [" + category + "] " + message;
         }
     }
 }

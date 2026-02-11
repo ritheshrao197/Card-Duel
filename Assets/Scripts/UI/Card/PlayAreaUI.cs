@@ -1,6 +1,7 @@
 using UnityEngine;
 using CardDuel.UI.Events;
 using System.Collections.Generic;
+using CardDuel.UI.Card;
 
 namespace CardDuel.UI.Gameplay
 {

@@ -1,14 +1,14 @@
 using UnityEngine;
-using CardDuel.Application;
 using CardDuel.Networking;
 using CardDuel.Gameplay;
+using Assets.Scripts.Application;
 
-namespace CardDuel.Bootstrap
+namespace Assets.Scripts.Application
 {
     public class GameBootstrap : MonoBehaviour
     {
-        private GameFlowController _controller;
-        [SerializeField] private CardDatabase cardDatabase;
+        private GameFlowManager _flowManager;
+        [SerializeField] private CardDatabase _cardDatabase;
 
         private void OnEnable()
         {
@@ -18,36 +18,36 @@ namespace CardDuel.Bootstrap
             CardDatabaseProvider.Initialize(runtimeDb);
 
             Debug.Log($"Loaded {cards.Count} cards from JSON");
+            
+            // Find all required network components
             var netcode = FindObjectOfType<NetcodeBootstrapper>();
             var matchmakingNet = FindObjectOfType<MatchmakingNetworkController>();
-            var turnNet = FindObjectOfType<TurnLockNetworkController>();
-            var sceneController = FindObjectOfType<NetworkSceneController>();
+            var gameSessionController = FindObjectOfType<GameSessionNetworkController>();
             var cardPlayNetworkController = FindObjectOfType<CardPlayNetworkController>();
-            var CardDrawNetworkController = FindObjectOfType<CardDrawNetworkController>();
-            var turnPhaseNetworkController = FindObjectOfType<TurnPhaseNetworkController>();
+            var cardDrawNetworkController = FindObjectOfType<CardDrawNetworkController>();
 
-            var matchmaking = new MatchmakingUseCase(netcode, matchmakingNet);
-            var reconnect = new ReconnectUseCase();
-
-            // Core services
+            // Initialize core services
             var gameState = new GameState();
             var deckService = new DeckService();
-            var hand = new PlayerHandState();
+            var handState = new PlayerHandState();
 
-            var gameplay = new GameplayUseCase(turnNet, cardPlayNetworkController,hand, gameState);
+            // Create consolidated gameplay use case
+            var gameplay = new GameplayUseCase(
+                gameSessionController,
+                cardPlayNetworkController,
+                cardDrawNetworkController,
+                deckService,
+                handState,
+                gameState
+            );
 
-            _controller = new GameFlowController(matchmaking, gameplay, reconnect);
-
-            // Network controllers
-            var timer = FindObjectOfType<TurnTimerNetworkController>();
-
-            // Use cases
-            new GameplayStartUseCase(gameState, timer, CardDrawNetworkController, deckService, turnPhaseNetworkController);
+            // Create unified flow manager
+            _flowManager = new GameFlowManager(netcode, matchmakingNet, gameplay);
         }
 
         private void OnDestroy()
         {
-            _controller.Dispose();
+            _flowManager?.Dispose();
         }
     }
 }

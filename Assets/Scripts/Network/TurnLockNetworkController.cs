@@ -1,63 +1,183 @@
 using Unity.Netcode;
-using CardDuel.UI.Events;
+using CardDuel.Gameplay;
 using CardDuel.Utils;
+using CardDuel.UI.Events;
+using System;
 
 namespace CardDuel.Networking
 {
-    public class TurnLockNetworkController : NetworkBehaviour
+    public class TurnLockNetworkController : JsonNetworkController
     {
-        private NetworkVariable<bool> hostEnded =
-            new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        protected override void RegisterMessageHandlers()
+        {
+            RegisterHandler("endTurn", HandleEndTurnMessage);
+        }
 
-        private NetworkVariable<bool> clientEnded =
-            new(false, NetworkVariableReadPermission.Everyone, NetworkVariableWritePermission.Server);
+        private void HandleEndTurnMessage(string jsonMessage)
+        {
+            var message = NetworkMessageSerializer.Deserialize<EndTurnMessage>(jsonMessage);
+            if (message == null) return;
 
+            ulong clientId = GetClientId(message.playerId);
+            Log.Net($"EndTurn message received from {message.playerId}");
+
+            GameState.Instance.TurnEndedPlayers.Add(clientId);
+
+            // Notify local player that their turn is locked
+            var lockMessage = new NetworkMessage("turnLocked")
+            {
+                action = "turnLocked"
+            };
+            SendToClient(clientId, lockMessage);
+
+            if (GameState.Instance.TurnEndedPlayers.Count ==
+                NetworkManager.Singleton.ConnectedClientsIds.Count)
+            {
+                Log.Net("Both players ended turn");
+                StartReveal();
+            }
+        }
+
+        private void HandleTurnLockedMessage(string jsonMessage)
+        {
+            UIEventBus.Publish(new LocalTurnLockedEvent());
+        }
+
+        private void StartReveal()
+        {
+            // Send reveal message to all clients
+            var revealMessage = new NetworkMessage("revealStart")
+            {
+                action = "revealStart"
+            };
+            SendToAllClients(revealMessage);
+            
+            ResolveRound();
+        }
+
+        private void HandleRevealStartMessage(string jsonMessage)
+        {
+            Log.Net("Reveal phase started");
+            UIEventBus.Publish(new UIStateChangedEvent
+            {
+                State = UIState.Reveal
+            });
+        }
+
+        private void ResolveRound()
+        {
+            foreach (var kvp in GameState.Instance.PlayedCards)
+            {
+                int total = 0;
+
+                foreach (var card in kvp.Value)
+                    total += card.Power;
+
+                GameState.Instance.Scores[kvp.Key] += total;
+            }
+
+            int scoreA = GetScore(0);
+            int scoreB = GetScore(1);
+            
+            var resultMessage = new NetworkMessage("roundResult")
+            {
+                action = "roundResult"
+            };
+            // In a real implementation, you would include scores in the message
+            SendToAllClients(resultMessage);
+
+            GameState.Instance.NextRound();
+        }
+
+        private void HandleRoundResultMessage(string jsonMessage)
+        {
+            // In a real implementation, parse scores from message
+            UIEventBus.Publish(new RoundResultEvent
+            {
+                PlayerAScore = 0, // Get from message
+                PlayerBScore = 0  // Get from message
+            });
+        }
+
+        private int GetScore(ulong clientId)
+        {
+            if (GameState.Instance.Scores.TryGetValue(clientId, out int score))
+                return score;
+
+            return 0;
+        }
+
+        // Legacy method for backward compatibility
         public void RequestEndTurn()
         {
+            if (!IsOwner && !IsClient)
+                return;
+
+            RequestEndTurnServerRpc();
+        }
+
+        // New JSON-based method
+        public void RequestEndTurnJson()
+        {
             if (!IsSpawned) return;
-            SubmitEndTurnServerRpc();
+
+            var message = new EndTurnMessage
+            {
+                playerId = GetPlayerId(NetworkManager.Singleton.LocalClientId)
+            };
+
+            SendToServer(message);
         }
 
         [ServerRpc(RequireOwnership = false)]
-        private void SubmitEndTurnServerRpc(ServerRpcParams rpcParams = default)
+        public void RequestEndTurnServerRpc(ServerRpcParams rpcParams = default)
         {
-            ulong sender = rpcParams.Receive.SenderClientId;
+            ulong clientId = rpcParams.Receive.SenderClientId;
 
-            Log.Net($"EndTurn received from {sender}");
+            Log.Net($"EndTurn received from {clientId}");
 
-            if (sender == NetworkManager.ServerClientId)
-                hostEnded.Value = true;
-            else
-                clientEnded.Value = true;
+            GameState.Instance.TurnEndedPlayers.Add(clientId);
 
-            NotifyWaitingClientRpc();
+            // Notify local player that their turn is locked
+            EndTurnLockedClientRpc(clientId);
 
-            if (hostEnded.Value && clientEnded.Value)
+            if (GameState.Instance.TurnEndedPlayers.Count ==
+                NetworkManager.Singleton.ConnectedClientsIds.Count)
             {
                 Log.Net("Both players ended turn");
-                StartRevealClientRpc();
-                ResetForNextTurn();
+
+                StartReveal();
             }
         }
 
         [ClientRpc]
-        private void NotifyWaitingClientRpc()
+        private void EndTurnLockedClientRpc(ulong clientId)
         {
-            UIEventBus.Publish(new WaitingForOpponentEvent { IsWaiting = true });
-            UIEventBus.Publish(new LocalTurnLockedEvent());
+            if (NetworkManager.Singleton.LocalClientId == clientId)
+            {
+                UIEventBus.Publish(new LocalTurnLockedEvent());
+            }
         }
 
         [ClientRpc]
-        private void StartRevealClientRpc()
+        private void RevealClientRpc()
         {
-            UIEventBus.Publish(new WaitingForOpponentEvent { IsWaiting = false });
-            UIEventBus.Publish(new RevealPhaseStartedEvent());
+            Log.Net("Reveal phase started");
+
+            UIEventBus.Publish(new UIStateChangedEvent
+            {
+                State = UIState.Reveal
+            });
         }
 
-        private void ResetForNextTurn()
+        [ClientRpc]
+        private void SendResultClientRpc(int scoreA, int scoreB)
         {
-            hostEnded.Value = false;
-            clientEnded.Value = false;
+            UIEventBus.Publish(new RoundResultEvent
+            {
+                PlayerAScore = scoreA,
+                PlayerBScore = scoreB
+            });
         }
     }
 }

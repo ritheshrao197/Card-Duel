@@ -48,5 +48,15 @@ namespace CardDuel.Networking
         {
             UIEventBus.Publish(new EndTurnClickedEvent());
         }
+        // [ClientRpc]
+        // public void StopTurnClientRpc()
+        // {
+        //     Log.Net("StopTurnClientRpc");
+
+        //     _running = false;
+
+        //     UIEventBus.Publish(new TurnTimerStoppedEvent());
+        // }
+
     }
 }
